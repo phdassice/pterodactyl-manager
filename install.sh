@@ -41,13 +41,22 @@ fi
 # 獲取腳本所在目錄
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" 2>/dev/null && pwd )"
 
-# 檢測是否通過 curl 管道執行
-if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/ptero-manager.sh" ]; then
+# 如果無法獲取目錄，嘗試使用當前目錄
+if [ -z "$SCRIPT_DIR" ]; then
+    SCRIPT_DIR="$(pwd)"
+fi
+
+# 檢測是否通過 curl 管道執行（檢查多個可能的文件名）
+if [ ! -f "$SCRIPT_DIR/ptero-manager.sh" ] && \
+   [ ! -f "$SCRIPT_DIR/install.sh" ] && \
+   [ ! -f "$SCRIPT_DIR/quick-commands.sh" ]; then
     echo -e "${YELLOW}檢測到遠程安裝模式${NC}"
     USE_REMOTE=true
     TEMP_DIR=$(mktemp -d)
     SCRIPT_DIR="$TEMP_DIR"
     echo -e "${BLUE}臨時目錄: ${NC}$TEMP_DIR"
+else
+    echo -e "${GREEN}檢測到本地安裝模式${NC}"
 fi
 
 echo -e "${BLUE}安裝目錄: ${NC}$INSTALL_DIR"
