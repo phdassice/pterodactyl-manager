@@ -51,7 +51,7 @@
         sudo cp ./ptero-manager.sh "$INSTALL_DIR/$MANAGER_NAME"
     else
         echo -e "${YELLOW}從 GitHub 下載主管理工具...${NC}"
-        sudo curl -fsSL https://raw.githubusercontent.com/phdassice/pterodactyl-manger/main/ptero-manager.sh -o "$INSTALL_DIR/$MANAGER_NAME" || {
+        sudo curl -fsSL https://raw.githubusercontent.com/phdassice/pterodactyl-manager/main/ptero-manager.sh -o "$INSTALL_DIR/$MANAGER_NAME" || {
             echo -e "${RED}下載失敗，請檢查網路連接或檔案路徑${NC}"
             exit 1
         }
