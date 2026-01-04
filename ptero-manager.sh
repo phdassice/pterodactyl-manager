@@ -561,6 +561,44 @@ quick_install() {
     echo -e "${YELLOW}請參考官方文檔完成後續配置: https://pterodactyl.io/panel/1.0/getting_started.html${NC}"
 }
 
+# 卸載工具
+uninstall_tool() {
+    echo -e "${RED}=== 卸載 Pterodactyl 管理工具 ===${NC}"
+    echo -e "${YELLOW}警告: 此操作將移除已安裝的管理工具${NC}"
+    echo -e "${YELLOW}這不會影響 Pterodactyl 面板本身${NC}"
+    echo ""
+    read -p "確定要卸載嗎? (輸入 YES 確認): " confirm
+    
+    if [ "$confirm" != "YES" ]; then
+        echo -e "${GREEN}已取消卸載${NC}"
+        return
+    fi
+    
+    echo ""
+    echo -e "${BLUE}正在卸載...${NC}"
+    
+    # 檢查並移除主工具
+    if [ -f "/usr/local/bin/ptero-manager" ]; then
+        sudo rm /usr/local/bin/ptero-manager
+        echo -e "${GREEN}✓ 已移除 ptero-manager${NC}"
+    else
+        echo -e "${YELLOW}! ptero-manager 未找到${NC}"
+    fi
+    
+    # 檢查並移除快速命令工具（如果存在）
+    if [ -f "/usr/local/bin/ptero-quick" ]; then
+        sudo rm /usr/local/bin/ptero-quick
+        echo -e "${GREEN}✓ 已移除 ptero-quick${NC}"
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✓ 卸載完成！${NC}"
+    echo -e "${CYAN}感謝使用 Pterodactyl 管理工具${NC}"
+    echo ""
+    read -p "按Enter鍵退出..."
+    exit 0
+}
+
 # 主菜單
 show_menu() {
     show_header
@@ -599,10 +637,13 @@ show_menu() {
     echo -e "  ${CYAN}安裝工具:${NC}"
     echo "   19. 快速安裝面板"
     echo ""
+    echo -e "  ${CYAN}工具管理:${NC}"
+    echo "   20. 卸載此管理工具"
+    echo ""
     echo -e "  ${RED}0. 退出${NC}"
     echo ""
     echo -e "${CYAN}================================================${NC}"
-    read -p "請輸入選項 [0-19]: " choice
+    read -p "請輸入選項 [0-20]: " choice
     echo ""
     
     case $choice in
@@ -672,6 +713,9 @@ show_menu() {
             ;;
         19)
             quick_install
+            ;;
+        20)
+            uninstall_tool
             ;;
         0)
             echo -e "${GREEN}感謝使用！${NC}"
