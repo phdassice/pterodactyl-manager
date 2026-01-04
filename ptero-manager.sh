@@ -371,13 +371,35 @@ quick_diagnosis() {
     fi
     
     echo -e "\n${BLUE}檢查關鍵服務狀態...${NC}"
-    for service in nginx wings mysql redis; do
-        if systemctl is-active --quiet $service 2>/dev/null; then
-            echo -e "${GREEN}✓ $service 運行中${NC}"
-        else
-            echo -e "${RED}✗ $service 未運行${NC}"
-        fi
-    done
+    # 檢查 Nginx
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        echo -e "${GREEN}✓ nginx 運行中${NC}"
+    else
+        echo -e "${RED}✗ nginx 未運行${NC}"
+    fi
+    
+    # 檢查 Wings
+    if systemctl is-active --quiet wings 2>/dev/null; then
+        echo -e "${GREEN}✓ wings 運行中${NC}"
+    else
+        echo -e "${RED}✗ wings 未運行${NC}"
+    fi
+    
+    # 檢查 MySQL/MariaDB
+    if systemctl is-active --quiet mysql 2>/dev/null; then
+        echo -e "${GREEN}✓ mysql 運行中${NC}"
+    elif systemctl is-active --quiet mariadb 2>/dev/null; then
+        echo -e "${GREEN}✓ mariadb 運行中${NC}"
+    else
+        echo -e "${RED}✗ mysql/mariadb 未運行${NC}"
+    fi
+    
+    # 檢查 Redis
+    if systemctl is-active --quiet redis 2>/dev/null || systemctl is-active --quiet redis-server 2>/dev/null; then
+        echo -e "${GREEN}✓ redis 運行中${NC}"
+    else
+        echo -e "${RED}✗ redis 未運行${NC}"
+    fi
     
     echo -e "\n${BLUE}檢查 PHP 模塊...${NC}"
     required_modules=("gd" "mysql" "mbstring" "xml" "curl" "zip")
