@@ -402,7 +402,7 @@ quick_diagnosis() {
     fi
     
     echo -e "\n${BLUE}檢查 PHP 模塊...${NC}"
-    required_modules=("gd" "mysql" "mbstring" "xml" "curl" "zip")
+    required_modules=("gd" "mbstring" "xml" "curl" "zip")
     for module in "${required_modules[@]}"; do
         if php -m | grep -q "^$module$"; then
             echo -e "${GREEN}✓ $module${NC}"
@@ -410,6 +410,13 @@ quick_diagnosis() {
             echo -e "${RED}✗ $module 缺失${NC}"
         fi
     done
+    
+    # 檢查 MySQL 相關模組 (mysqli 或 mysqlnd)
+    if php -m | grep -qE "^(mysqli|mysqlnd|pdo_mysql)$"; then
+        echo -e "${GREEN}✓ mysql (mysqli/mysqlnd/pdo_mysql)${NC}"
+    else
+        echo -e "${RED}✗ mysql 模組缺失${NC}"
+    fi
     
     echo -e "\n${BLUE}檢查磁碟空間...${NC}"
     disk_usage=$(df -h / | awk 'NR==2 {print $5}' | sed 's/%//')
