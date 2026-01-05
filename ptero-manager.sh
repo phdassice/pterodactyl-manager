@@ -319,6 +319,90 @@ clean_old_logs() {
     echo -e "${GREEN}✓ 日誌清理完成！${NC}"
 }
 
+# Docker 清理
+clean_docker() {
+    # 檢查 Docker 是否安裝
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}錯誤: Docker 未安裝${NC}"
+        return
+    fi
+    
+    echo -e "${CYAN}=== Docker 清理 ===${NC}"
+    echo ""
+    echo "1. 清除 Dangling Images (懸空映像)"
+    echo "2. 清除所有未使用的映像"
+    echo "3. 清除停止的容器"
+    echo "4. 清除未使用的網絡"
+    echo "5. 清除未使用的卷"
+    echo "6. 完整清理 (所有未使用的資源)"
+    echo "7. 返回主菜單"
+    echo ""
+    read -p "請選擇 [1-7]: " docker_choice
+    
+    case $docker_choice in
+        1)
+            echo -e "${BLUE}正在清除 dangling images...${NC}"
+            docker image prune -f
+            echo -e "${GREEN}✓ Dangling images 清除完成${NC}"
+            ;;
+        2)
+            echo -e "${YELLOW}警告: 這將刪除所有未被容器使用的映像${NC}"
+            read -p "確定繼續? (y/n): " confirm
+            if [ "$confirm" = "y" ]; then
+                echo -e "${BLUE}正在清除未使用的映像...${NC}"
+                docker image prune -a -f
+                echo -e "${GREEN}✓ 未使用的映像清除完成${NC}"
+            else
+                echo -e "${YELLOW}已取消${NC}"
+            fi
+            ;;
+        3)
+            echo -e "${BLUE}正在清除停止的容器...${NC}"
+            docker container prune -f
+            echo -e "${GREEN}✓ 停止的容器清除完成${NC}"
+            ;;
+        4)
+            echo -e "${BLUE}正在清除未使用的網絡...${NC}"
+            docker network prune -f
+            echo -e "${GREEN}✓ 未使用的網絡清除完成${NC}"
+            ;;
+        5)
+            echo -e "${YELLOW}警告: 這將刪除所有未被容器使用的卷${NC}"
+            read -p "確定繼續? (y/n): " confirm
+            if [ "$confirm" = "y" ]; then
+                echo -e "${BLUE}正在清除未使用的卷...${NC}"
+                docker volume prune -f
+                echo -e "${GREEN}✓ 未使用的卷清除完成${NC}"
+            else
+                echo -e "${YELLOW}已取消${NC}"
+            fi
+            ;;
+        6)
+            echo -e "${YELLOW}警告: 這將執行完整的 Docker 清理${NC}"
+            echo -e "${YELLOW}包括: 停止的容器、未使用的網絡、dangling images${NC}"
+            read -p "確定繼續? (y/n): " confirm
+            if [ "$confirm" = "y" ]; then
+                echo -e "${BLUE}正在執行完整清理...${NC}"
+                docker system prune -f
+                echo -e "${GREEN}✓ Docker 完整清理完成${NC}"
+                
+                # 顯示清理後的空間
+                echo ""
+                echo -e "${CYAN}Docker 磁碟使用情況:${NC}"
+                docker system df
+            else
+                echo -e "${YELLOW}已取消${NC}"
+            fi
+            ;;
+        7)
+            return
+            ;;
+        *)
+            echo -e "${RED}無效的選擇${NC}"
+            ;;
+    esac
+}
+
 # 查看系統資源
 check_system_resources() {
     echo -e "${CYAN}=== 系統資源使用情況 ===${NC}"
@@ -599,123 +683,333 @@ uninstall_tool() {
     exit 0
 }
 
+# 安裝 Arix 主題
+install_arix_theme() {
+    echo -e "${YELLOW}=== 安裝 Arix 主題 ===${NC}"
+    
+    cd $PANEL_PATH
+    
+    echo -e "${BLUE}正在安裝 Arix 主題...${NC}"
+    php artisan arix install
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Arix 主題安裝完成！${NC}"
+        echo -e "${CYAN}請重新整理瀏覽器以查看變更${NC}"
+    else
+        echo -e "${RED}✗ 安裝失敗${NC}"
+    fi
+}
+
+# 更新 Arix 主題
+update_arix_theme() {
+    echo -e "${YELLOW}=== 更新 Arix 主題 ===${NC}"
+    
+    cd $PANEL_PATH
+    
+    echo -e "${BLUE}正在更新 Arix 主題到最新版本...${NC}"
+    php artisan arix update
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Arix 主題更新完成！${NC}"
+        echo -e "${CYAN}請重新整理瀏覽器以查看變更${NC}"
+    else
+        echo -e "${RED}✗ 更新失敗${NC}"
+    fi
+}
+
+# 卸載 Arix 主題
+uninstall_arix_theme() {
+    echo -e "${RED}=== 卸載 Arix 主題 ===${NC}"
+    echo -e "${YELLOW}這將還原為預設主題${NC}"
+    read -p "確定要卸載 Arix 主題嗎? (y/n): " confirm
+    
+    if [ "$confirm" != "y" ]; then
+        echo -e "${YELLOW}已取消${NC}"
+        return
+    fi
+    
+    cd $PANEL_PATH
+    
+    echo -e "${BLUE}正在卸載 Arix 主題...${NC}"
+    php artisan arix uninstall
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ 已還原為預設主題${NC}"
+        echo -e "${CYAN}請重新整理瀏覽器以查看變更${NC}"
+    else
+        echo -e "${RED}✗ 卸載失敗${NC}"
+    fi
+}
+
+# 修復 Arix 主題
+repair_arix_theme() {
+    echo -e "${YELLOW}=== 修復 Arix 主題 ===${NC}"
+    
+    cd $PANEL_PATH
+    
+    echo -e "${BLUE}[1/3] 清除所有快取...${NC}"
+    php artisan view:clear
+    php artisan config:clear
+    php artisan route:clear
+    php artisan cache:clear
+    
+    echo -e "${BLUE}[2/3] 修復權限...${NC}"
+    # 獲取web服務器用戶
+    WEB_USER="www-data"
+    if [ -f /etc/redhat-release ]; then
+        WEB_USER="nginx"
+    fi
+    chown -R $WEB_USER:$WEB_USER resources/views
+    chmod -R 755 resources/views
+    
+    echo -e "${BLUE}[3/3] 重新編譯視圖...${NC}"
+    php artisan view:cache
+    
+    echo -e "${GREEN}✓ Arix 主題修復完成！${NC}"
+}
+
+# Arix 主題管理子菜單
+arix_theme_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== Arix 主題管理 ===${NC}"
+        echo ""
+        echo "1. 安裝 Arix 主題"
+        echo "2. 更新 Arix 主題"
+        echo "3. 卸載 Arix 主題"
+        echo "4. 修復 Arix 主題"
+        echo "5. 清除主題快取"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-5]: " choice
+        
+        case $choice in
+            1) install_arix_theme ;;
+            2) update_arix_theme ;;
+            3) uninstall_arix_theme ;;
+            4) repair_arix_theme ;;
+            5)
+                cd $PANEL_PATH
+                php artisan view:clear
+                php artisan config:clear
+                echo -e "${GREEN}✓ 主題快取已清除${NC}"
+                ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
+# 快取與優化子菜單
+cache_optimization_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== 快取與優化 ===${NC}"
+        echo ""
+        echo "1. 清除快取"
+        echo "2. 優化面板"
+        echo "3. 快速維護 (一鍵維護+優化+重啟)"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-3]: " choice
+        
+        case $choice in
+            1) clear_cache ;;
+            2) optimize_panel ;;
+            3) quick_maintenance ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
+# 維護模式子菜單
+maintenance_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== 維護模式 ===${NC}"
+        echo ""
+        echo "1. 進入維護模式"
+        echo "2. 退出維護模式"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-2]: " choice
+        
+        case $choice in
+            1) enter_maintenance ;;
+            2) exit_maintenance ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
+# 服務管理子菜單
+service_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== 服務管理 ===${NC}"
+        echo ""
+        echo "1. 重啟面板服務 (Nginx/PHP-FPM/Redis)"
+        echo "2. 查看服務狀態"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-2]: " choice
+        
+        case $choice in
+            1) restart_panel_services ;;
+            2)
+                echo -e "${CYAN}=== 服務狀態 ===${NC}"
+                check_wings_status
+                echo ""
+                echo -e "${BLUE}Nginx:${NC} $(systemctl is-active nginx)"
+                echo -e "${BLUE}Redis:${NC} $(systemctl is-active redis 2>/dev/null || echo 'inactive')"
+                for v in 8.3 8.2 8.1 8.0; do
+                    if systemctl list-unit-files | grep -q "php${v}-fpm"; then
+                        echo -e "${BLUE}PHP-FPM:${NC} $(systemctl is-active php${v}-fpm)"
+                        break
+                    fi
+                done
+                ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
+# 系統維護子菜單
+system_maintenance_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== 系統維護 ===${NC}"
+        echo ""
+        echo "1. 更新面板"
+        echo "2. 修復權限"
+        echo "3. 備份面板"
+        echo "4. 數據庫優化"
+        echo "5. Docker 清理"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-5]: " choice
+        
+        case $choice in
+            1) update_panel ;;
+            2) fix_permissions ;;
+            3) backup_panel ;;
+            4) optimize_database ;;
+            5) clean_docker ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
+# 診斷與日誌子菜單
+diagnostics_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== 診斷與日誌 ===${NC}"
+        echo ""
+        echo "1. 快速診斷"
+        echo "2. 查看日誌"
+        echo "3. 清理舊日誌"
+        echo "4. 查看系統資源"
+        echo "5. 查看版本信息"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-5]: " choice
+        
+        case $choice in
+            1) quick_diagnosis ;;
+            2) view_logs ;;
+            3) clean_old_logs ;;
+            4) check_system_resources ;;
+            5) check_panel_version ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
+# 安裝與卸載子菜單
+install_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== 安裝與卸載 ===${NC}"
+        echo ""
+        echo "1. 快速安裝面板"
+        echo "2. 卸載此管理工具"
+        echo "0. 返回主菜單"
+        echo ""
+        read -p "請選擇 [0-2]: " choice
+        
+        case $choice in
+            1) quick_install ;;
+            2) uninstall_tool ;;
+            0) return ;;
+            *) echo -e "${RED}無效的選擇${NC}" ;;
+        esac
+        echo ""
+        read -p "按Enter鍵繼續..."
+    done
+}
+
 # 主菜單
 show_menu() {
     show_header
-    echo -e "${GREEN}請選擇操作:${NC}"
+    echo -e "${GREEN}請選擇功能類別:${NC}"
     echo ""
-    echo -e "  ${CYAN}快取管理:${NC}"
-    echo "    1. 清除快取"
-    echo "    2. 優化面板"
-    echo ""
-    echo -e "  ${CYAN}維護模式:${NC}"
-    echo "    3. 進入維護模式"
-    echo "    4. 退出維護模式"
-    echo "    5. 快速維護 (一鍵維護+優化+重啟)"
-    echo ""
-    echo -e "  ${CYAN}Wings 管理:${NC}"
-    echo "    6. Wings 管理菜單"
-    echo "    7. 快速重啟 Wings"
-    echo ""
-    echo -e "  ${CYAN}服務管理:${NC}"
-    echo "    8. 重啟面板服務 (Nginx/PHP-FPM/Redis)"
-    echo "    9. 查看服務狀態"
-    echo ""
-    echo -e "  ${CYAN}系統維護:${NC}"
-    echo "   10. 更新面板"
-    echo "   11. 修復權限"
-    echo "   12. 備份面板"
-    echo "   13. 數據庫優化"
-    echo ""
-    echo -e "  ${CYAN}診斷工具:${NC}"
-    echo "   14. 快速診斷"
-    echo "   15. 查看日誌"
-    echo "   16. 清理舊日誌"
-    echo "   17. 查看系統資源"
-    echo "   18. 查看版本信息"
-    echo ""
-    echo -e "  ${CYAN}安裝工具:${NC}"
-    echo "   19. 快速安裝面板"
-    echo ""
-    echo -e "  ${CYAN}工具管理:${NC}"
-    echo "   20. 卸載此管理工具"
+    echo "  1. 快取與優化"
+    echo "  2. 維護模式"
+    echo "  3. Wings 管理"
+    echo "  4. 服務管理"
+    echo "  5. 系統維護"
+    echo "  6. 診斷與日誌"
+    echo "  7. Arix 主題管理"
+    echo "  8. 安裝與卸載"
     echo ""
     echo -e "  ${RED}0. 退出${NC}"
     echo ""
     echo -e "${CYAN}================================================${NC}"
-    read -p "請輸入選項 [0-20]: " choice
+    read -p "請輸入選項 [0-8]: " choice
     echo ""
     
     case $choice in
         1)
-            clear_cache
+            cache_optimization_menu
             ;;
         2)
-            optimize_panel
+            maintenance_menu
             ;;
         3)
-            enter_maintenance
-            ;;
-        4)
-            exit_maintenance
-            ;;
-        5)
-            quick_maintenance
-            ;;
-        6)
             wings_management
             ;;
+        4)
+            service_menu
+            ;;
+        5)
+            system_maintenance_menu
+            ;;
+        6)
+            diagnostics_menu
+            ;;
         7)
-            restart_wings
+            arix_theme_menu
             ;;
         8)
-            restart_panel_services
-            ;;
-        9)
-            echo -e "${CYAN}=== 服務狀態 ===${NC}"
-            check_wings_status
-            echo ""
-            echo -e "${BLUE}Nginx:${NC} $(systemctl is-active nginx)"
-            echo -e "${BLUE}Redis:${NC} $(systemctl is-active redis 2>/dev/null || echo 'inactive')"
-            for v in 8.3 8.2 8.1 8.0; do
-                if systemctl list-unit-files | grep -q "php${v}-fpm"; then
-                    echo -e "${BLUE}PHP-FPM:${NC} $(systemctl is-active php${v}-fpm)"
-                    break
-                fi
-            done
-            ;;
-        10)
-            update_panel
-            ;;
-        11)
-            fix_permissions
-            ;;
-        12)
-            backup_panel
-            ;;
-        13)
-            optimize_database
-            ;;
-        14)
-            quick_diagnosis
-            ;;
-        15)
-            view_logs
-            ;;
-        16)
-            clean_old_logs
-            ;;
-        17)
-            check_system_resources
-            ;;
-        18)
-            check_panel_version
-            ;;
-        19)
-            quick_install
-            ;;
-        20)
-            uninstall_tool
+            install_menu
             ;;
         0)
             echo -e "${GREEN}感謝使用！${NC}"
